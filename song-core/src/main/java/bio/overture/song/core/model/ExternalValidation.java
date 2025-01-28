@@ -1,6 +1,5 @@
 package bio.overture.song.core.model;
 
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AnalysisTypeOptions {
-  private List<String> fileTypes;
-  private List<ExternalValidation> externalValidations;
+public class ExternalValidation {
+  private String jsonPath;
+  private String url;
 }
