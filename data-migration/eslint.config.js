@@ -15,7 +15,7 @@ export default tseslint.config(
 
 	// config with just ignores is the replacement for `.eslintignore`
 	{
-		ignores: ['dist', 'package-lock.json', 'package.json'],
+		ignores: ['dist', 'pnpm-lock.yaml', 'package.json'],
 	},
 
 	// extends ...
