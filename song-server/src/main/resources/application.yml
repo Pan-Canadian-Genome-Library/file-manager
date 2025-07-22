@@ -306,5 +306,8 @@ auth:
         prefix: "song-"
         suffix: ".WRITE"
       system: "song.WRITE"
-
+authz:
+  host: {}
+  admin:
+    group: PCGL_ADMIN_GROUP
 ---
