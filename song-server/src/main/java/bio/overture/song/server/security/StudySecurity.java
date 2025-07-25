@@ -19,10 +19,9 @@ package bio.overture.song.server.security;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopes;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopesFromRpt;
 
-import java.util.Set;
-
 import bio.overture.song.server.auth.AuthorizationService;
 import bio.overture.song.server.service.auth.KeycloakAuthorizationService;
+import java.util.Set;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,21 +37,20 @@ public class StudySecurity {
   @NonNull private final String systemScope;
   private final String provider;
 
-  @Autowired
-  private KeycloakAuthorizationService keycloakAuthorizationService;
+  @Autowired private KeycloakAuthorizationService keycloakAuthorizationService;
 
-  @Autowired
-  private AuthorizationService authorizationService;
+  @Autowired private AuthorizationService authorizationService;
 
   public boolean authorize(@NonNull Authentication authentication, @NonNull final String studyId) {
     log.info("Checking study-level authorization for studyId {}", studyId);
 
     Set<String> grantedScopes;
 
-    if("keycloak".equalsIgnoreCase(provider) && authentication instanceof JwtAuthenticationToken) {
+    if ("keycloak".equalsIgnoreCase(provider) && authentication instanceof JwtAuthenticationToken) {
 
-      val authGrants = keycloakAuthorizationService
-          .fetchAuthorizationGrants(((JwtAuthenticationToken) authentication).getToken().getTokenValue());
+      val authGrants =
+          keycloakAuthorizationService.fetchAuthorizationGrants(
+              ((JwtAuthenticationToken) authentication).getToken().getTokenValue());
 
       grantedScopes = extractGrantedScopesFromRpt(authGrants);
     } else {
@@ -86,10 +84,11 @@ public class StudySecurity {
   }
 
   public boolean authorizeNew(Authentication authentication, String studyId) {
-    if (!(authentication instanceof JwtAuthenticationToken jwtAuth)) {
+    if (!(authentication instanceof JwtAuthenticationToken)) {
       log.warn("Unsupported authentication type");
       return false;
     }
+    JwtAuthenticationToken jwtAuth = (JwtAuthenticationToken) authentication;
 
     String accessToken = jwtAuth.getToken().getTokenValue();
     var userDetails = authorizationService.fetchUserDetails(accessToken);
