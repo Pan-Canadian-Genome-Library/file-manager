@@ -1,4 +1,4 @@
-package bio.overture.song.server.service.auth;
+package bio.overture.song.server.auth;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -19,12 +19,12 @@ public class AuthorizationService {
   private String authZHost;
 
   @Value("${authz.admin.group}")
-  private String adminGroup;
+  private String adminGroupName;
 
   private final RestTemplate restTemplate = new RestTemplate();
 
   public UserDetails fetchUserDetails(String accessToken) {
-    String url = authZHost + "{end_point}";
+    String url = authZHost + "/user/me";
 
     HttpHeaders headers = new HttpHeaders();
     headers.setBearerAuth(accessToken);
@@ -45,37 +45,60 @@ public class AuthorizationService {
 
   public boolean isAdmin(UserDetails userDetails) {
     if (userDetails.getGroups() == null) return false;
-    return userDetails.getGroups().contains(adminGroup);
+
+    return userDetails.getGroups().stream()
+            .anyMatch(g -> adminGroupName.equalsIgnoreCase(g.getName()));
   }
 
   public boolean hasWriteAccessToStudy(UserDetails userDetails, String studyId) {
-    if (isAdmin(userDetails)) {
-      return true;
-    }
+    if (isAdmin(userDetails)) return true;
 
-    if (userDetails.getStudyAuthorization() == null
-        || userDetails.getStudyAuthorization().getEditableStudies() == null) {
-      return false;
-    }
+    StudyAuthorizations studyAuth = userDetails.getStudyAuthorizations();
+    if (studyAuth == null || studyAuth.getEditableStudies() == null) return false;
 
-    return userDetails.getStudyAuthorization().getEditableStudies().contains(studyId);
+    return studyAuth.getEditableStudies().contains(studyId);
   }
+
 
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class UserDetails {
-    private String sub;
+    private UserInfo userinfo;
 
-    private List<String> groups;
+    @JsonProperty("study_authorizations")
+    private StudyAuthorizations studyAuthorizations;
 
-    @JsonProperty("study_authorization")
-    private StudyAuthorization studyAuthorization;
+    private List<Group> groups;
   }
 
   @Data
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public static class StudyAuthorization {
+  public static class UserInfo {
+    @JsonProperty("pcgl_id")
+    private String pcglId;
+
+    @JsonProperty("site_admin")
+    private boolean siteAdmin;
+
+    @JsonProperty("site_curator")
+    private boolean siteCurator;
+  }
+
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class StudyAuthorizations {
     @JsonProperty("editable_studies")
     private List<String> editableStudies;
+
+    @JsonProperty("readable_studies")
+    private List<String> readableStudies;
+  }
+
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class Group {
+    private String name;
+    private String description;
+    private int id;
   }
 }
