@@ -98,9 +98,9 @@ spring:
         temp.use_jdbc_metadata_defaults: false  # Disable driver's feature detection
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:8432/song
-    username: postgres
-    password: password
+    url: jdbc:postgresql://localhost:5433/songDb?stringtype=unspecified
+    username: admin
+    password: admin123
     max-active: 10
     max-idle: 1
     min-idle: 1

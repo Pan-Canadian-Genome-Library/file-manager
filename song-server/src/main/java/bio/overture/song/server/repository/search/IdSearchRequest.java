@@ -18,7 +18,9 @@
 package bio.overture.song.server.repository.search;
 
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 public class IdSearchRequest {
@@ -28,8 +30,10 @@ public class IdSearchRequest {
   @ApiModelProperty(notes = "regex pattern. Default is wildcard")
   private final String objectId;
 
-  public static IdSearchRequest createIdSearchRequest(String objectId) {
-    return new IdSearchRequest(getGlobPattern(objectId));
+  public static IdSearchRequest createIdSearchRequest(
+      String objectId) {
+    return new IdSearchRequest(
+        getGlobPattern(objectId));
   }
 
   public String getObjectId() {
