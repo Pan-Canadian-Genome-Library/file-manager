@@ -98,9 +98,9 @@ spring:
         temp.use_jdbc_metadata_defaults: false  # Disable driver's feature detection
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5433/songDb?stringtype=unspecified
-    username: admin
-    password: admin123
+    url: jdbc:postgresql://localhost:8432/song
+    username: postgres
+    password: password
     max-active: 10
     max-idle: 1
     min-idle: 1
@@ -139,11 +139,6 @@ management:
 id:
   persistInMemory: true
 
-authz:
-  host: "https://auth.dev.pcgl.sd4h.ca/authz/user/me"
-  admin:
-    group: ADMIN_GROUP_NAME
-
 ---
 
 ###############################################################################
@@ -180,6 +175,10 @@ auth:
         prefix: "STUDY."
         suffix: ".WRITE"
       system: "song.WRITE"
+authz:
+  host:
+  admin:
+    group:
 
 ---
 
