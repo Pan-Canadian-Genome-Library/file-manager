@@ -25,6 +25,7 @@ import bio.overture.song.server.service.auth.KeycloakAuthorizationService;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
@@ -35,23 +36,37 @@ public class SystemSecurity {
   @NonNull private final String systemScope;
   private final String provider;
 
-  @Autowired
-  private KeycloakAuthorizationService keycloakAuthorizationService;
+  @Value("${authz.admin.group:}")
+  private String adminGroupName;
+
+  @Autowired private KeycloakAuthorizationService keycloakAuthorizationService;
 
   public boolean authorize(@NonNull Authentication authentication) {
     log.debug("Checking system-level authorization");
 
+    // ✅ AuthZ admin group check
+    if (adminGroupName != null && !adminGroupName.isEmpty()) {
+      boolean isAdmin =
+          authentication.getAuthorities().stream()
+              .anyMatch(a -> a.getAuthority().equals("ROLE_" + adminGroupName));
+
+      if (isAdmin) {
+        log.debug("User is in admin group '{}', granting access", adminGroupName);
+        return true;
+      }
+    }
+
     Set<String> grantedScopes;
 
-    if("keycloak".equalsIgnoreCase(provider) && authentication instanceof JwtAuthenticationToken) {
-
-      val authGrants = keycloakAuthorizationService
-          .fetchAuthorizationGrants(((JwtAuthenticationToken) authentication).getToken().getTokenValue());
-
+    // Keycloak/Ego RPT handling
+    if ("keycloak".equalsIgnoreCase(provider) && authentication instanceof JwtAuthenticationToken) {
+      val authGrants =
+          keycloakAuthorizationService.fetchAuthorizationGrants(
+              ((JwtAuthenticationToken) authentication).getToken().getTokenValue());
       grantedScopes = extractGrantedScopesFromRpt(authGrants);
     } else {
-      // extract scopes from authentication object
-      grantedScopes = extractGrantedScopes(authentication);
+      // For AuthZ or simple bearer token
+      grantedScopes = extractGrantedScopes(authentication.getPrincipal());
     }
 
     return verifyOneOfSystemScope(grantedScopes);
@@ -63,9 +78,7 @@ public class SystemSecurity {
 
   public boolean isGrantedForSystem(@NonNull String tokenScope) {
     log.debug(
-        "Checking if input scope '{}' is granted for system scope '{}'",
-        tokenScope,
-        systemScope);
+        "Checking if input scope '{}' is granted for system scope '{}'", tokenScope, systemScope);
     return systemScope.equals(tokenScope);
   }
 }
