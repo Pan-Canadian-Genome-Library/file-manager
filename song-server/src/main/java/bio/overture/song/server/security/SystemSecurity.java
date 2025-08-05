@@ -19,9 +19,9 @@ package bio.overture.song.server.security;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopes;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopesFromRpt;
 
-import java.util.Set;
-
+import bio.overture.song.server.auth.AuthZAuthorizationService;
 import bio.overture.song.server.service.auth.KeycloakAuthorizationService;
+import java.util.Set;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,11 +40,10 @@ public class SystemSecurity {
   private String adminGroupName;
 
   @Autowired private KeycloakAuthorizationService keycloakAuthorizationService;
+  @Autowired private AuthZAuthorizationService authorizationService;
 
   public boolean authorize(@NonNull Authentication authentication) {
     log.debug("Checking system-level authorization");
-
-    // ✅ AuthZ admin group check
     if (adminGroupName != null && !adminGroupName.isEmpty()) {
       boolean isAdmin =
           authentication.getAuthorities().stream()
@@ -56,16 +55,14 @@ public class SystemSecurity {
       }
     }
 
-    Set<String> grantedScopes;
+    Set<String> grantedScopes = Set.of();
 
-    // Keycloak/Ego RPT handling
     if ("keycloak".equalsIgnoreCase(provider) && authentication instanceof JwtAuthenticationToken) {
       val authGrants =
           keycloakAuthorizationService.fetchAuthorizationGrants(
               ((JwtAuthenticationToken) authentication).getToken().getTokenValue());
       grantedScopes = extractGrantedScopesFromRpt(authGrants);
-    } else {
-      // For AuthZ or simple bearer token
+    } else if ("pcglauthz".equalsIgnoreCase(provider)) {
       grantedScopes = extractGrantedScopes(authentication.getPrincipal());
     }
 

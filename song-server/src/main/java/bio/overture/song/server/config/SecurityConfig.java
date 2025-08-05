@@ -77,21 +77,6 @@ public class SecurityConfig {
     return SystemSecurity.builder().systemScope(scope.getSystem()).provider(provider).build();
   }
 
-  //    @Bean
-  //    public AuthenticationManagerResolver<HttpServletRequest>
-  // tokenAuthenticationManagerResolver() {
-  //
-  //        // Auth Managers for JWT and for ApiKeys. JWT uses the default auth provider,
-  //        // but OpaqueTokens are handled by the custom ApiKeyIntrospector
-  //        AuthenticationManager jwt = new ProviderManager(new
-  // JwtAuthenticationProvider(jwtDecoder));
-  //        AuthenticationManager opaqueToken =
-  //                new ProviderManager(new OpaqueTokenAuthenticationProvider(new
-  // ApiKeyIntrospector(introspectionUri, clientId, clientSecret, tokenName)));
-  //
-  //        return (request) -> useJwt(request) ? jwt : opaqueToken;
-  //    }
-
   @Bean
   public AuthenticationManagerResolver<HttpServletRequest> tokenAuthenticationManagerResolver() {
     return request -> {
@@ -139,10 +124,6 @@ public class SecurityConfig {
         .authorizeRequests()
         .anyRequest()
         .authenticated();
-
-    //        http.oauth2ResourceServer(
-    //                oauth2 ->
-    // oauth2.authenticationManagerResolver(this.tokenAuthenticationManagerResolver()));
 
     http.authorizeRequests(
             authorize ->

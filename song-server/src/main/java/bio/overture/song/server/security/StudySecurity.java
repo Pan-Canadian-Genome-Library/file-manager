@@ -16,6 +16,8 @@
  */
 package bio.overture.song.server.security;
 
+import static bio.overture.song.server.utils.Scopes.extractGrantedScopesFromRpt;
+
 import bio.overture.song.server.auth.AuthZAuthorizationService;
 import bio.overture.song.server.service.auth.KeycloakAuthorizationService;
 import java.util.Set;
@@ -65,6 +67,18 @@ public class StudySecurity {
       log.warn("Unsupported authentication type");
       return false;
     }
-    return authorizationService.canEditStudy(authentication, studyId);
+
+    Set<String> grantedScopes;
+
+    if ("keycloak".equalsIgnoreCase(provider)) {
+      val authGrants =
+          keycloakAuthorizationService.fetchAuthorizationGrants(
+              ((BearerTokenAuthentication) authentication).getToken().getTokenValue());
+      grantedScopes = extractGrantedScopesFromRpt(authGrants);
+      return verifyOneOfStudyScope(grantedScopes, studyId);
+    } else if ("pcglauthz".equalsIgnoreCase(provider)) {
+      return authorizationService.canEditStudy(authentication, studyId);
+    }
+    return false;
   }
 }

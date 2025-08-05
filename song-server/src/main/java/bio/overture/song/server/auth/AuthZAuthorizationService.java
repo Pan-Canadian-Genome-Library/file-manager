@@ -2,11 +2,13 @@ package bio.overture.song.server.auth;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.stereotype.Service;
 
 @Service
+@Profile("secure")
 public class AuthZAuthorizationService {
 
   @Value("${authz.admin.group}")

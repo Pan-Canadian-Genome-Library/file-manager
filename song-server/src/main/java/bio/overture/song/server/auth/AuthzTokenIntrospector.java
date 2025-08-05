@@ -3,8 +3,11 @@ package bio.overture.song.server.auth;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import bio.overture.song.server.model.dto.AuthZClaims;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -22,6 +25,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
 @Component
+@Profile("secure")
 public class AuthzTokenIntrospector implements OpaqueTokenIntrospector {
 
   private final RestTemplate restTemplate = new RestTemplate();
@@ -45,11 +49,18 @@ public class AuthzTokenIntrospector implements OpaqueTokenIntrospector {
 
       Map<String, Object> userDetails = response.getBody();
 
-      Map<String, Object> claims = extractClaims(userDetails);
-      List<GrantedAuthority> authorities = extractAuthorities(claims);
+      AuthZClaims claims = extractClaims(userDetails);
 
-      // ✅ Return the specific principal type expected by SystemSecurity / Scopes
-      return new OAuth2IntrospectionAuthenticatedPrincipal(claims, authorities);
+      Map<String, Object> claimsMap = Map.of(
+              "sub", claims.getSub(),
+              "emails", claims.getEmails(),
+              "primary_email", claims.getPrimaryEmail(),
+              "editable_studies", claims.getEditableStudies(),
+              "readable_studies", claims.getReadableStudies(),
+              "groups", claims.getGroups()
+      );
+      List<GrantedAuthority> authorities = extractAuthorities(claimsMap);
+      return new OAuth2IntrospectionAuthenticatedPrincipal(claimsMap, authorities);
 
     } catch (Exception e) {
       log.error("Failed to introspect token with AuthZ", e);
@@ -57,23 +68,37 @@ public class AuthzTokenIntrospector implements OpaqueTokenIntrospector {
     }
   }
 
-  private Map<String, Object> extractClaims(Map<String, Object> userDetails) {
+  private AuthZClaims extractClaims(Map<String, Object> userDetails) {
     Map<String, Object> userinfo = (Map<String, Object>) userDetails.get("userinfo");
     Map<String, Object> studyAuths = (Map<String, Object>) userDetails.get("study_authorizations");
     List<Map<String, Object>> groups = (List<Map<String, Object>>) userDetails.get("groups");
 
-    return Map.of(
-        "sub", userinfo.get("pcgl_id"),
-        "email", ((List<Map<String, Object>>) userinfo.get("emails")).get(0).get("address"),
-        "editable_studies", studyAuths.get("editable_studies"),
-        "readable_studies", studyAuths.get("readable_studies"),
-        "groups", groups.stream().map(g -> g.get("name").toString()).collect(Collectors.toList()));
+    List<Map<String, Object>> emails = (List<Map<String, Object>>) userinfo.get("emails");
+    List<Map<String, Object>> safeEmails = (emails != null) ? emails : List.of();
+
+    String primaryEmail = safeEmails.stream()
+            .filter(e -> "official".equalsIgnoreCase((String) e.get("type")))
+            .map(e -> (String) e.get("address"))
+            .findFirst()
+            .orElseGet(() -> safeEmails.stream()
+                    .map(e -> (String) e.get("address"))
+                    .findFirst()
+                    .orElse(null));
+
+    return AuthZClaims.builder()
+            .sub((String) userinfo.get("pcgl_id"))
+            .emails(safeEmails)
+            .primaryEmail(primaryEmail)
+            .editableStudies((List<String>) studyAuths.get("editable_studies"))
+            .readableStudies((List<String>) studyAuths.get("readable_studies"))
+            .groups(groups.stream().map(g -> g.get("name").toString()).collect(Collectors.toList()))
+            .build();
   }
 
   private List<GrantedAuthority> extractAuthorities(Map<String, Object> claims) {
     List<String> groups = (List<String>) claims.getOrDefault("groups", List.of());
     return groups.stream()
-        .map(group -> new SimpleGrantedAuthority("ROLE_" + group))
+        .map(SimpleGrantedAuthority::new)
         .collect(Collectors.toList());
   }
 }
