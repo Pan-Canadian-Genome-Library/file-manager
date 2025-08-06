@@ -16,7 +16,6 @@
  */
 package bio.overture.song.server.security;
 
-import static bio.overture.song.server.utils.Scopes.extractGrantedScopes;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopesFromRpt;
 
 import bio.overture.song.server.auth.AuthZAuthorizationService;
@@ -40,20 +39,10 @@ public class SystemSecurity {
   private String adminGroupName;
 
   @Autowired private KeycloakAuthorizationService keycloakAuthorizationService;
-  @Autowired private AuthZAuthorizationService authorizationService;
+  @Autowired private AuthZAuthorizationService authZAuthorizationService;
 
   public boolean authorize(@NonNull Authentication authentication) {
     log.debug("Checking system-level authorization");
-    if (adminGroupName != null && !adminGroupName.isEmpty()) {
-      boolean isAdmin =
-          authentication.getAuthorities().stream()
-              .anyMatch(a -> a.getAuthority().equals("ROLE_" + adminGroupName));
-
-      if (isAdmin) {
-        log.debug("User is in admin group '{}', granting access", adminGroupName);
-        return true;
-      }
-    }
 
     Set<String> grantedScopes = Set.of();
 
@@ -63,9 +52,18 @@ public class SystemSecurity {
               ((JwtAuthenticationToken) authentication).getToken().getTokenValue());
       grantedScopes = extractGrantedScopesFromRpt(authGrants);
     } else if ("pcglauthz".equalsIgnoreCase(provider)) {
-      grantedScopes = extractGrantedScopes(authentication);
-    }
+      if (adminGroupName != null && !adminGroupName.isEmpty()) {
+        boolean isAdmin =
+            authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_" + adminGroupName));
 
+        if (isAdmin) {
+          log.debug("User is in admin group '{}', granting access", adminGroupName);
+          return true;
+        }
+      }
+      return false;
+    }
     return verifyOneOfSystemScope(grantedScopes);
   }
 

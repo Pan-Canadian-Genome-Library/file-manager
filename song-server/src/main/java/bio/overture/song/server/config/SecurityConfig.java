@@ -35,10 +35,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationManagerResolver;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
 import org.springframework.security.oauth2.server.resource.authentication.OpaqueTokenAuthenticationProvider;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.web.SecurityFilterChain;
@@ -79,11 +82,14 @@ public class SecurityConfig {
 
   @Bean
   public AuthenticationManagerResolver<HttpServletRequest> tokenAuthenticationManagerResolver() {
-    return request -> {
-      OpaqueTokenAuthenticationProvider authenticationProvider =
-          new OpaqueTokenAuthenticationProvider(authzTokenIntrospector);
-      return authenticationProvider::authenticate;
-    };
+
+    AuthenticationManager jwt = new ProviderManager(new JwtAuthenticationProvider(jwtDecoder));
+    AuthenticationManager opaqueToken =
+        new ProviderManager(
+            new OpaqueTokenAuthenticationProvider(
+                new ApiKeyIntrospector(introspectionUri, clientId, clientSecret, tokenName)));
+
+    return (request) -> useJwt(request) ? jwt : opaqueToken;
   }
 
   @Bean

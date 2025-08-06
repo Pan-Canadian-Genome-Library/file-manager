@@ -1,4 +1,4 @@
-package bio.overture.song.server.model.dto;
+package bio.overture.song.server.auth;
 
 import java.util.List;
 import java.util.Map;
