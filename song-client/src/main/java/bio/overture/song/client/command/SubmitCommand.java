@@ -39,7 +39,7 @@ public class SubmitCommand extends Command {
   private String fileName;
 
   @Parameter(
-      names = {"-d", "--allow-duplicates"},
+      names = {"-ad", "--allow-duplicates"},
       required = false)
   private Boolean allowDuplicates = false;
 
