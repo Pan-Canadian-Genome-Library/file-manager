@@ -63,7 +63,7 @@ public class SystemSecurity {
               ((JwtAuthenticationToken) authentication).getToken().getTokenValue());
       grantedScopes = extractGrantedScopesFromRpt(authGrants);
     } else if ("pcglauthz".equalsIgnoreCase(provider)) {
-      grantedScopes = extractGrantedScopes(authentication.getPrincipal());
+      grantedScopes = extractGrantedScopes(authentication);
     }
 
     return verifyOneOfSystemScope(grantedScopes);
