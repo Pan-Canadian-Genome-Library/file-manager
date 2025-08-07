@@ -55,7 +55,7 @@ public class SystemSecurity {
       if (adminGroupName != null && !adminGroupName.isEmpty()) {
         boolean isAdmin =
             authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_" + adminGroupName));
+                .anyMatch(a -> a.getAuthority().equals(adminGroupName));
 
         if (isAdmin) {
           log.debug("User is in admin group '{}', granting access", adminGroupName);
