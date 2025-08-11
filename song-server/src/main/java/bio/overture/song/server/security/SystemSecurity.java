@@ -16,16 +16,18 @@
  */
 package bio.overture.song.server.security;
 
-import static bio.overture.song.server.utils.Scopes.extractGrantedScopes;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopesFromRpt;
 
-import java.util.Set;
-
+import bio.overture.song.server.auth.AuthZAuthorizationService;
 import bio.overture.song.server.service.auth.KeycloakAuthorizationService;
+import bio.overture.song.server.utils.Scopes;
+import java.util.Set;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 @Slf4j
@@ -35,26 +37,29 @@ public class SystemSecurity {
   @NonNull private final String systemScope;
   private final String provider;
 
-  @Autowired
-  private KeycloakAuthorizationService keycloakAuthorizationService;
+  @Value("${authz.admin.group:}")
+  private String adminGroupName;
+
+  @Autowired private KeycloakAuthorizationService keycloakAuthorizationService;
+  @Autowired private AuthZAuthorizationService authZAuthorizationService;
 
   public boolean authorize(@NonNull Authentication authentication) {
     log.debug("Checking system-level authorization");
 
     Set<String> grantedScopes;
-
-    if("keycloak".equalsIgnoreCase(provider) && authentication instanceof JwtAuthenticationToken) {
-
-      val authGrants = keycloakAuthorizationService
-          .fetchAuthorizationGrants(((JwtAuthenticationToken) authentication).getToken().getTokenValue());
-
-      grantedScopes = extractGrantedScopesFromRpt(authGrants);
+    if (authentication instanceof BearerTokenAuthentication) {
+      return authZAuthorizationService.isAdmin(authentication);
+    } else if ("keycloak".equalsIgnoreCase(provider)
+        && authentication instanceof JwtAuthenticationToken) {
+      val authGrants =
+          keycloakAuthorizationService.fetchAuthorizationGrants(
+              ((JwtAuthenticationToken) authentication).getToken().getTokenValue());
+      return verifyOneOfSystemScope(extractGrantedScopesFromRpt(authGrants));
     } else {
+      // Default to EGO provider
       // extract scopes from authentication object
-      grantedScopes = extractGrantedScopes(authentication);
+      return verifyOneOfSystemScope(Scopes.extractGrantedScopes(authentication));
     }
-
-    return verifyOneOfSystemScope(grantedScopes);
   }
 
   public boolean verifyOneOfSystemScope(@NonNull Set<String> grantedScopes) {
@@ -63,9 +68,7 @@ public class SystemSecurity {
 
   public boolean isGrantedForSystem(@NonNull String tokenScope) {
     log.debug(
-        "Checking if input scope '{}' is granted for system scope '{}'",
-        tokenScope,
-        systemScope);
+        "Checking if input scope '{}' is granted for system scope '{}'", tokenScope, systemScope);
     return systemScope.equals(tokenScope);
   }
 }

@@ -99,7 +99,7 @@ spring:
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5433/songDb?stringtype=unspecified
-    username: admin 
+    username: admin
     password: admin123
     max-active: 10
     max-idle: 1
@@ -175,6 +175,10 @@ auth:
         prefix: "STUDY."
         suffix: ".WRITE"
       system: "song.WRITE"
+authz:
+  host:
+  admin:
+    group:
 
 ---
 

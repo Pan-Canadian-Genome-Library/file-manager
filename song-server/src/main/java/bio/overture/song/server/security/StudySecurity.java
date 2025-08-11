@@ -16,17 +16,16 @@
  */
 package bio.overture.song.server.security;
 
-import static bio.overture.song.server.utils.Scopes.extractGrantedScopes;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopesFromRpt;
 
-import java.util.Set;
-
+import bio.overture.song.server.auth.AuthZAuthorizationService;
 import bio.overture.song.server.service.auth.KeycloakAuthorizationService;
+import java.util.Set;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
 
 @Slf4j
 @Builder
@@ -37,27 +36,9 @@ public class StudySecurity {
   @NonNull private final String systemScope;
   private final String provider;
 
-  @Autowired
-  private KeycloakAuthorizationService keycloakAuthorizationService;
+  @Autowired private KeycloakAuthorizationService keycloakAuthorizationService;
 
-  public boolean authorize(@NonNull Authentication authentication, @NonNull final String studyId) {
-    log.info("Checking study-level authorization for studyId {}", studyId);
-
-    Set<String> grantedScopes;
-
-    if("keycloak".equalsIgnoreCase(provider) && authentication instanceof JwtAuthenticationToken) {
-
-      val authGrants = keycloakAuthorizationService
-          .fetchAuthorizationGrants(((JwtAuthenticationToken) authentication).getToken().getTokenValue());
-
-      grantedScopes = extractGrantedScopesFromRpt(authGrants);
-    } else {
-      // extract scopes from authentication object
-      grantedScopes = extractGrantedScopes(authentication);
-    }
-
-    return verifyOneOfStudyScope(grantedScopes, studyId);
-  }
+  @Autowired private AuthZAuthorizationService authorizationService;
 
   public boolean isGrantedForStudy(@NonNull String tokenScope, @NonNull String studyId) {
     log.info(
@@ -79,5 +60,25 @@ public class StudySecurity {
 
   public String getStudyScope(@NonNull String studyId) {
     return studyPrefix + studyId + studySuffix;
+  }
+
+  public boolean authorize(Authentication authentication, String studyId) {
+    if (!(authentication instanceof BearerTokenAuthentication)) {
+      log.warn("Unsupported authentication type");
+      return false;
+    }
+
+    Set<String> grantedScopes;
+
+    if ("keycloak".equalsIgnoreCase(provider)) {
+      val authGrants =
+          keycloakAuthorizationService.fetchAuthorizationGrants(
+              ((BearerTokenAuthentication) authentication).getToken().getTokenValue());
+      grantedScopes = extractGrantedScopesFromRpt(authGrants);
+      return verifyOneOfStudyScope(grantedScopes, studyId);
+    } else if ("pcglauthz".equalsIgnoreCase(provider)) {
+      return authorizationService.canEditStudy(authentication, studyId);
+    }
+    return false;
   }
 }
