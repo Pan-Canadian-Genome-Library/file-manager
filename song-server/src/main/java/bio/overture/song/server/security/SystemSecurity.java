@@ -20,12 +20,14 @@ import static bio.overture.song.server.utils.Scopes.extractGrantedScopesFromRpt;
 
 import bio.overture.song.server.auth.AuthZAuthorizationService;
 import bio.overture.song.server.service.auth.KeycloakAuthorizationService;
+import bio.overture.song.server.utils.Scopes;
 import java.util.Set;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 @Slf4j
@@ -44,27 +46,20 @@ public class SystemSecurity {
   public boolean authorize(@NonNull Authentication authentication) {
     log.debug("Checking system-level authorization");
 
-    Set<String> grantedScopes = Set.of();
-
-    if ("keycloak".equalsIgnoreCase(provider) && authentication instanceof JwtAuthenticationToken) {
+    Set<String> grantedScopes;
+    if (authentication instanceof BearerTokenAuthentication) {
+      return authZAuthorizationService.isAdmin(authentication);
+    } else if ("keycloak".equalsIgnoreCase(provider)
+        && authentication instanceof JwtAuthenticationToken) {
       val authGrants =
           keycloakAuthorizationService.fetchAuthorizationGrants(
               ((JwtAuthenticationToken) authentication).getToken().getTokenValue());
-      grantedScopes = extractGrantedScopesFromRpt(authGrants);
-    } else if ("pcglauthz".equalsIgnoreCase(provider)) {
-      if (adminGroupName != null && !adminGroupName.isEmpty()) {
-        boolean isAdmin =
-            authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals(adminGroupName));
-
-        if (isAdmin) {
-          log.debug("User is in admin group '{}', granting access", adminGroupName);
-          return true;
-        }
-      }
-      return false;
+      return verifyOneOfSystemScope(extractGrantedScopesFromRpt(authGrants));
+    } else {
+      // Default to EGO provider
+      // extract scopes from authentication object
+      return verifyOneOfSystemScope(Scopes.extractGrantedScopes(authentication));
     }
-    return verifyOneOfSystemScope(grantedScopes);
   }
 
   public boolean verifyOneOfSystemScope(@NonNull Set<String> grantedScopes) {

@@ -82,6 +82,11 @@ public class SecurityConfig {
 
   @Bean
   public AuthenticationManagerResolver<HttpServletRequest> tokenAuthenticationManagerResolver() {
+    if ("pcglauthz".equalsIgnoreCase(provider)) {
+      AuthenticationManager tokenManager =
+          new ProviderManager(new OpaqueTokenAuthenticationProvider(new AuthzTokenIntrospector()));
+      return (request) -> tokenManager;
+    }
 
     AuthenticationManager jwt = new ProviderManager(new JwtAuthenticationProvider(jwtDecoder));
     AuthenticationManager opaqueToken =
