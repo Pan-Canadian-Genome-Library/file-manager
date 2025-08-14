@@ -20,12 +20,14 @@ import static bio.overture.song.server.utils.Scopes.extractGrantedScopesFromRpt;
 
 import bio.overture.song.server.auth.AuthZAuthorizationService;
 import bio.overture.song.server.service.auth.KeycloakAuthorizationService;
+import bio.overture.song.server.utils.Scopes;
 import java.util.Set;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 @Slf4j
 @Builder
@@ -38,19 +40,19 @@ public class StudySecurity {
 
   @Autowired private KeycloakAuthorizationService keycloakAuthorizationService;
 
-  @Autowired private AuthZAuthorizationService authorizationService;
+  @Autowired private AuthZAuthorizationService authZAuthorizationService;
 
   public boolean isGrantedForStudy(@NonNull String tokenScope, @NonNull String studyId) {
     log.info(
-        "Checking if input scope '{}' is granted for study scope '{}'",
-        tokenScope,
-        getStudyScope(studyId));
+            "Checking if input scope '{}' is granted for study scope '{}'",
+            tokenScope,
+            getStudyScope(studyId));
     return systemScope.equals(tokenScope)
-        || isScopeMatchStudy(tokenScope, studyId); // short-circuit
+            || isScopeMatchStudy(tokenScope, studyId); // short-circuit
   }
 
   public boolean verifyOneOfStudyScope(
-      @NonNull Set<String> grantedScopes, @NonNull final String studyId) {
+          @NonNull Set<String> grantedScopes, @NonNull final String studyId) {
     return grantedScopes.stream().anyMatch(s -> isGrantedForStudy(s, studyId));
   }
 
@@ -70,15 +72,28 @@ public class StudySecurity {
 
     Set<String> grantedScopes;
 
-    if ("keycloak".equalsIgnoreCase(provider)) {
+    if (authentication instanceof BearerTokenAuthentication) {
+      return authZAuthorizationService.isAdmin(authentication);
+    } else if ("keycloak".equalsIgnoreCase(provider)
+            && authentication instanceof JwtAuthenticationToken) {
       val authGrants =
-          keycloakAuthorizationService.fetchAuthorizationGrants(
-              ((BearerTokenAuthentication) authentication).getToken().getTokenValue());
-      grantedScopes = extractGrantedScopesFromRpt(authGrants);
-      return verifyOneOfStudyScope(grantedScopes, studyId);
-    } else if ("pcglauthz".equalsIgnoreCase(provider)) {
-      return authorizationService.canEditStudy(authentication, studyId);
+              keycloakAuthorizationService.fetchAuthorizationGrants(
+                      ((JwtAuthenticationToken) authentication).getToken().getTokenValue());
+      return verifyOneOfSystemScope(extractGrantedScopesFromRpt(authGrants));
+    } else {
+      // Default to EGO provider
+      // extract scopes from authentication object
+      return verifyOneOfSystemScope(Scopes.extractGrantedScopes(authentication));
     }
-    return false;
+  }
+
+  public boolean verifyOneOfSystemScope(@NonNull Set<String> grantedScopes) {
+    return grantedScopes.stream().anyMatch(this::isGrantedForSystem);
+  }
+
+  public boolean isGrantedForSystem(@NonNull String tokenScope) {
+    log.debug(
+            "Checking if input scope '{}' is granted for system scope '{}'", tokenScope, systemScope);
+    return systemScope.equals(tokenScope);
   }
 }
