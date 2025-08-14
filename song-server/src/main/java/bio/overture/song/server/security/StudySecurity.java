@@ -72,7 +72,7 @@ public class StudySecurity {
 
     Set<String> grantedScopes;
 
-    if (authentication instanceof BearerTokenAuthentication) {
+    if ("pcglauthz".equalsIgnoreCase(provider) && authentication instanceof BearerTokenAuthentication) {
       return authZAuthorizationService.isAdmin(authentication);
     } else if ("keycloak".equalsIgnoreCase(provider)
             && authentication instanceof JwtAuthenticationToken) {
