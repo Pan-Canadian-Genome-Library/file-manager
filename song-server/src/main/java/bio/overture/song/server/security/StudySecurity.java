@@ -20,13 +20,13 @@ import static bio.overture.song.server.utils.Scopes.extractGrantedScopes;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopesFromRpt;
 
 import bio.overture.song.server.auth.AuthZAuthorizationService;
+import bio.overture.song.server.auth.AuthzTokenIntrospector;
 import bio.overture.song.server.service.auth.KeycloakAuthorizationService;
 import java.util.Set;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 @Slf4j
@@ -40,27 +40,32 @@ public class StudySecurity {
 
   @Autowired private KeycloakAuthorizationService keycloakAuthorizationService;
 
-  @Autowired private AuthZAuthorizationService authZAuthorizationService;
+  @Autowired private AuthZAuthorizationService authorizationService;
 
   public boolean authorize(@NonNull Authentication authentication, @NonNull final String studyId) {
     log.info("Checking study-level authorization for studyId {}", studyId);
 
-    if ("pcglauthz".equalsIgnoreCase(provider)
-        && authentication instanceof BearerTokenAuthentication) {
-      return authZAuthorizationService.canEditStudy(authentication, studyId);
-    } else if ("keycloak".equalsIgnoreCase(provider)
-        && authentication instanceof JwtAuthenticationToken) {
+    if ("pcglauthz".equalsIgnoreCase(provider)) {
+      val claims = AuthzTokenIntrospector.extractClaimsFromAuthentication(authentication);
+
+      return claims.isPresent() && authorizationService.canEditStudy(claims.get(), studyId);
+    }
+
+    Set<String> grantedScopes;
+
+    if ("keycloak".equalsIgnoreCase(provider) && authentication instanceof JwtAuthenticationToken) {
 
       val authGrants =
           keycloakAuthorizationService.fetchAuthorizationGrants(
               ((JwtAuthenticationToken) authentication).getToken().getTokenValue());
 
-      return verifyOneOfStudyScope(extractGrantedScopesFromRpt(authGrants), studyId);
+      grantedScopes = extractGrantedScopesFromRpt(authGrants);
     } else {
-      // Default to EGO provider
       // extract scopes from authentication object
-      return verifyOneOfStudyScope(extractGrantedScopes(authentication), studyId);
+      grantedScopes = extractGrantedScopes(authentication);
     }
+
+    return verifyOneOfStudyScope(grantedScopes, studyId);
   }
 
   public boolean isGrantedForStudy(@NonNull String tokenScope, @NonNull String studyId) {

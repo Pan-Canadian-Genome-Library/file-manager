@@ -16,18 +16,18 @@
  */
 package bio.overture.song.server.security;
 
+import static bio.overture.song.server.utils.Scopes.extractGrantedScopes;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopesFromRpt;
 
 import bio.overture.song.server.auth.AuthZAuthorizationService;
+import bio.overture.song.server.auth.AuthzTokenIntrospector;
 import bio.overture.song.server.service.auth.KeycloakAuthorizationService;
-import bio.overture.song.server.utils.Scopes;
 import java.util.Set;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 @Slf4j
@@ -46,20 +46,27 @@ public class SystemSecurity {
   public boolean authorize(@NonNull Authentication authentication) {
     log.debug("Checking system-level authorization");
 
-    if ("pcglauthz".equalsIgnoreCase(provider)
-        && authentication instanceof BearerTokenAuthentication) {
-      return authZAuthorizationService.isAdmin(authentication);
-    } else if ("keycloak".equalsIgnoreCase(provider)
-        && authentication instanceof JwtAuthenticationToken) {
+    if ("pcglauthz".equalsIgnoreCase(provider)) {
+      val claims = AuthzTokenIntrospector.extractClaimsFromAuthentication(authentication);
+
+      return claims.isPresent() && authZAuthorizationService.isAdmin(claims.get());
+    }
+
+    Set<String> grantedScopes;
+
+    if ("keycloak".equalsIgnoreCase(provider) && authentication instanceof JwtAuthenticationToken) {
+
       val authGrants =
           keycloakAuthorizationService.fetchAuthorizationGrants(
               ((JwtAuthenticationToken) authentication).getToken().getTokenValue());
-      return verifyOneOfSystemScope(extractGrantedScopesFromRpt(authGrants));
+
+      grantedScopes = extractGrantedScopesFromRpt(authGrants);
     } else {
-      // Default to EGO provider
       // extract scopes from authentication object
-      return verifyOneOfSystemScope(Scopes.extractGrantedScopes(authentication));
+      grantedScopes = extractGrantedScopes(authentication);
     }
+
+    return verifyOneOfSystemScope(grantedScopes);
   }
 
   public boolean verifyOneOfSystemScope(@NonNull Set<String> grantedScopes) {
