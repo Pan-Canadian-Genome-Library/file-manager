@@ -17,6 +17,7 @@
 package bio.overture.song.server.config;
 
 import bio.overture.song.server.auth.AuthzTokenIntrospector;
+import bio.overture.song.server.config.SecurityConfig.ScopeConfig.StudyScopeConfig;
 import bio.overture.song.server.security.ApiKeyIntrospector;
 import bio.overture.song.server.security.StudySecurity;
 import bio.overture.song.server.security.SystemSecurity;
@@ -35,6 +36,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationManagerResolver;
 import org.springframework.security.authentication.ProviderManager;
@@ -44,7 +46,6 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
 import org.springframework.security.oauth2.server.resource.authentication.OpaqueTokenAuthenticationProvider;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
-import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -88,6 +89,8 @@ public class SecurityConfig {
       return (request) -> tokenManager;
     }
 
+    // Auth Managers for JWT and for ApiKeys. JWT uses the default auth provider,
+    // but OpaqueTokens are handled by the custom ApiKeyIntrospector
     AuthenticationManager jwt = new ProviderManager(new JwtAuthenticationProvider(jwtDecoder));
     AuthenticationManager opaqueToken =
         new ProviderManager(
@@ -112,39 +115,38 @@ public class SecurityConfig {
     return new ApiKeyIntrospector(introspectionUri, clientId, clientSecret, tokenName);
   }
 
+  @Override
   @SneakyThrows
   public void configure(HttpSecurity http) {
     http.authorizeRequests()
         .antMatchers("/isAlive")
         .permitAll()
-        .antMatchers("/studies/**")
-        .permitAll()
-        .antMatchers("/upload/**")
-        .permitAll()
         .antMatchers("/entities/**")
         .permitAll()
         .antMatchers("/export/**")
         .permitAll()
-        .antMatchers("/schemas/**")
+        .antMatchers(HttpMethod.GET, "/schemas/**") // AKA. AnalysisType
         .permitAll()
-        .antMatchers(swaggerConfig.getAlternateSwaggerUrl())
+        .antMatchers(
+            HttpMethod.GET,
+            "/studies/**") // This covers StudyController, FileController, and AnalysisController
         .permitAll()
-        .antMatchers("/swagger**", "/swagger-resources/**", "/v2/api**", "/webjars/**")
+        .antMatchers("/upload/**")
+        .permitAll()
+        .antMatchers(
+            swaggerConfig.getAlternateSwaggerUrl(),
+            "/swagger**",
+            "/swagger-resources/**",
+            "/v2/api**",
+            "/webjars/**")
         .permitAll()
         .and()
         .authorizeRequests()
         .anyRequest()
         .authenticated();
 
-    http.authorizeRequests(
-            authorize ->
-                authorize
-                    .antMatchers("/health", "/actuator/**")
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
-        .oauth2ResourceServer(
-            oauth2 -> oauth2.authenticationManagerResolver(tokenAuthenticationManagerResolver()));
+    http.oauth2ResourceServer(
+        oauth2 -> oauth2.authenticationManagerResolver(this.tokenAuthenticationManagerResolver()));
   }
 
   @Getter
@@ -182,40 +184,5 @@ public class SecurityConfig {
       }
     }
     return true;
-  }
-
-  @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http.authorizeHttpRequests(
-            authorize ->
-                authorize
-                    .antMatchers("/isAlive")
-                    .permitAll()
-                    .antMatchers("/studies/**")
-                    .permitAll()
-                    .antMatchers("/upload/**")
-                    .permitAll()
-                    .antMatchers("/entities/**")
-                    .permitAll()
-                    .antMatchers("/export/**")
-                    .permitAll()
-                    .antMatchers("/schemas/**")
-                    .permitAll()
-                    .antMatchers(swaggerConfig.getAlternateSwaggerUrl())
-                    .permitAll()
-                    .antMatchers(
-                        "/swagger**",
-                        "/swagger-ui.html",
-                        "/swagger-ui**",
-                        "/swagger-resources/**",
-                        "/v2/api-docs/**",
-                        "/webjars/**")
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
-        .oauth2ResourceServer(
-            oauth2 -> oauth2.opaqueToken(token -> token.introspector(authzTokenIntrospector)));
-
-    return http.build();
   }
 }

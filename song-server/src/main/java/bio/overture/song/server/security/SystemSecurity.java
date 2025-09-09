@@ -46,8 +46,8 @@ public class SystemSecurity {
   public boolean authorize(@NonNull Authentication authentication) {
     log.debug("Checking system-level authorization");
 
-    Set<String> grantedScopes;
-    if ("pcglauthz".equalsIgnoreCase(provider) && authentication instanceof BearerTokenAuthentication) {
+    if ("pcglauthz".equalsIgnoreCase(provider)
+        && authentication instanceof BearerTokenAuthentication) {
       return authZAuthorizationService.isAdmin(authentication);
     } else if ("keycloak".equalsIgnoreCase(provider)
         && authentication instanceof JwtAuthenticationToken) {

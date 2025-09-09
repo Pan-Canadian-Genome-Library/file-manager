@@ -63,6 +63,11 @@ Commands and options supported by the Song client.
 
 - **Usage:** `song-client submit [OPTIONS]`
 
+    | Option                      | Description                                         |
+    |-----------------------------|-----------------------------------------------------|
+    | `-f`, `--file`              | File name and directory for the payload             |
+    | `-ad`, `--allow-duplicates` | Allows duplicate files identified by their MD5 hash |
+
     :::info
     For detailed information, see our [documentation on submitting data with Song](https://docs.overture.bio/docs/core-software/Song/Usage/submitting-metadata).
     :::

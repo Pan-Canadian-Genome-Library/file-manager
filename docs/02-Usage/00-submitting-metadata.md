@@ -88,6 +88,11 @@ Use the song-client `submit` command:
 docker exec song-client sh -c "sing submit -f /output/example-payload.json"
 ```
 
+To allow duplicate files, use the `-ad` option:
+```bash
+docker exec song-client sh -c "sing submit -f /output/example-payload.json -ad"
+```
+
 Successful submission returns an `analysisId`:
 
 ```json
