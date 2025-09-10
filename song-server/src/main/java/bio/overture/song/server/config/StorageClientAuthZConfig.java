@@ -92,8 +92,7 @@ public class StorageClientAuthZConfig {
     retryTemplate.setRetryPolicy(new SimpleRetryPolicy(maxRetries, retryableExceptions, true));
 
     // Default retry listener will not perform any action on Client Errors (such as Unauthorized)
-    // but will
-    // prevent retries when the request fails due to timeout or sevice unavailable
+    // but will prevent retries when the request fails due to timeout or service unavailable
     retryTemplate.registerListener(new DefaultRetryListener(false));
 
     // This custom listener resets the service verification token if the request is rejected as
