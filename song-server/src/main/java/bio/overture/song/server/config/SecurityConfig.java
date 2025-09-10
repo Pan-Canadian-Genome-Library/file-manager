@@ -107,6 +107,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
   @Override
   @SneakyThrows
   public void configure(HttpSecurity http) {
+    http.csrf().disable();
     http.authorizeRequests()
         .antMatchers("/isAlive")
         .permitAll()
