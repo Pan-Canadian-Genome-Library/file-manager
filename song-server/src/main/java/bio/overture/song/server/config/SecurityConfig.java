@@ -122,9 +122,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .antMatchers(HttpMethod.GET, "/schemas/**") // AKA. AnalysisType
         .permitAll()
         .antMatchers(
-            "/studies/**") // This covers StudyController, FileController, and AnalysisController
-        .permitAll()
-        .antMatchers("/upload/**")
+            HttpMethod.GET, "/studies/**") // This covers StudyController, FileController, and
+        // AnalysisController
         .permitAll()
         .antMatchers(
             swaggerConfig.getAlternateSwaggerUrl(),
@@ -142,12 +141,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
       http.addFilterBefore(authZAuthenticationFilter, BasicAuthenticationFilter.class);
     } else {
       // Score built in auth handling for non-authz providers.
-      // This is kept to keep support for upstream code, but will be unused in PCGL.
-      // If this is left in the security chain, then any request without the
-      // Authorization token
-      // will throw an error,
-      // and that conflicts with our handling of requests identified by service
-      // tokens.
+      // This is kept to keep support for upstream code, but will be unused in PCGL. If this is left
+      // in the security chain, then any request without the Authorization token will throw an
+      // error, and that conflicts with our handling of requests identified by service tokens.
       http.oauth2ResourceServer(
           oauth2 ->
               oauth2.authenticationManagerResolver(this.tokenAuthenticationManagerResolver()));

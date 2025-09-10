@@ -8,7 +8,6 @@ import bio.overture.song.server.security.authz.dto.AuthZUserDetailsResponse;
 import java.util.Optional;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -17,7 +16,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Component
-@Profile("pcglauthz")
 public class AuthZRestClient {
   @Autowired private PCGLAuthZConfig pcglAuthZConfig;
 
@@ -159,7 +157,8 @@ public class AuthZRestClient {
     } catch (HttpClientErrorException e) {
       if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
         // Handle HTTP 403 Forbidden Response.
-        // This response happens when the stored service token has expired, so we clear it and try
+        // This response happens when the stored service token has expired, so we clear
+        // it and try
         // one additional time
         clearServiceVerificationToken();
         val retryResponse = sendGetVerifyUserToken(token);

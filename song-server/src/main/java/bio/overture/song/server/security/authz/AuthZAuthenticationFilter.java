@@ -11,14 +11,12 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Slf4j
 @Component
-@Profile("pcglauthz")
 public class AuthZAuthenticationFilter extends OncePerRequestFilter {
 
   @Autowired private AuthZRestClient authZRestClient;
@@ -51,7 +49,8 @@ public class AuthZAuthenticationFilter extends OncePerRequestFilter {
       }
     } else if (authorizationHeader != null) {
       // Request has an Authorization header.
-      // Treat this request as coming from a user, check for a Bearer token to authorize the
+      // Treat this request as coming from a user, check for a Bearer token to
+      // authorize the
       // request.
 
       if (!authorizationHeader.startsWith("Bearer ")) {

@@ -1,18 +1,22 @@
 package bio.overture.song.server.config;
 
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import org.springframework.validation.annotation.Validated;
 
 @Data
-@Profile("pcglauthz")
 @Configuration
 @ConfigurationProperties("auth.server.authz")
+@Validated
 public class PCGLAuthZConfig {
 
-  private String host;
-  private String adminGroup;
-  private String serviceId;
-  private String serviceUUID;
+  @NotNull private String host;
+
+  @NotNull private String adminGroup;
+
+  @NotNull private String serviceId;
+
+  @NotNull private String serviceUUID;
 }
