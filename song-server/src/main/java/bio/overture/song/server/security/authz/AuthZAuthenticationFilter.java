@@ -1,5 +1,12 @@
 package bio.overture.song.server.security.authz;
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Optional;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -8,14 +15,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Optional;
 
 @Slf4j
 @Component
@@ -35,9 +34,9 @@ public class AuthZAuthenticationFilter extends OncePerRequestFilter {
     String authorizationHeader = request.getHeader("Authorization");
 
     if (serviceToken != null && serviceId != null) {
-        // Service Token Headers both have a value.
-        // Treat this request as coming from another service,
-        // using a Service Verification Token to authorize the request.
+      // Service Token Headers both have a value.
+      // Treat this request as coming from another service,
+      // using a Service Verification Token to authorize the request.
 
       val credentials = new AuthZServiceTokenCredentials(serviceId, serviceToken);
 
@@ -51,8 +50,9 @@ public class AuthZAuthenticationFilter extends OncePerRequestFilter {
         return;
       }
     } else if (authorizationHeader != null) {
-        // Request has an Authorization header.
-        // Treat this request as coming from a user, check for a Bearer token to authorize the request.
+      // Request has an Authorization header.
+      // Treat this request as coming from a user, check for a Bearer token to authorize the
+      // request.
 
       if (!authorizationHeader.startsWith("Bearer ")) {
         resolveUnauthorized(response);
@@ -63,7 +63,6 @@ public class AuthZAuthenticationFilter extends OncePerRequestFilter {
       val userTokenAuthentication = getUserTokenAuthentication(bearerToken);
       if (userTokenAuthentication.isPresent()) {
         SecurityContextHolder.getContext().setAuthentication(userTokenAuthentication.get());
-        filterChain.doFilter(request, response);
       } else {
         resolveUnauthorized(response);
         return;

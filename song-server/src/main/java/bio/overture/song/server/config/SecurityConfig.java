@@ -19,12 +19,11 @@ package bio.overture.song.server.config;
 import bio.overture.song.server.security.ApiKeyIntrospector;
 import bio.overture.song.server.security.StudySecurity;
 import bio.overture.song.server.security.SystemSecurity;
+import bio.overture.song.server.security.authz.AuthZAuthenticationFilter;
 import java.util.UUID;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
-
-import bio.overture.song.server.security.authz.AuthZAuthenticationFilter;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -62,7 +61,7 @@ import org.springframework.validation.annotation.Validated;
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired private AuthZAuthenticationFilter authZAuthenticationFilter;
+  @Autowired private AuthZAuthenticationFilter authZAuthenticationFilter;
 
   @Autowired private SwaggerConfig swaggerConfig;
   @Autowired private JwtDecoder jwtDecoder;
@@ -74,7 +73,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
   private String tokenName;
 
   private final ScopeConfig scope = new ScopeConfig();
-
 
   @Bean
   public SystemSecurity systemSecurity() {
@@ -113,6 +111,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
   @Override
   @SneakyThrows
   public void configure(HttpSecurity http) {
+    http.csrf().disable();
     http.authorizeRequests()
         .antMatchers("/isAlive")
         .permitAll()
@@ -123,7 +122,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .antMatchers(HttpMethod.GET, "/schemas/**") // AKA. AnalysisType
         .permitAll()
         .antMatchers(
-            HttpMethod.GET,
             "/studies/**") // This covers StudyController, FileController, and AnalysisController
         .permitAll()
         .antMatchers("/upload/**")
@@ -140,19 +138,20 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .anyRequest()
         .authenticated();
 
-      if (provider.equals("pcglauthz")) {
-          http.addFilterBefore(authZAuthenticationFilter, BasicAuthenticationFilter.class);
-      } else {
-          // Score built in auth handling for non-authz providers.
-          // This is kept to keep support for upstream code, but will be unused in PCGL.
-          // If this is left in the security chain, then any request without the Authorization token
-          // will throw an error,
-          // and that conflicts with our handling of requests identified by service tokens.
-          http.oauth2ResourceServer(
-                  oauth2 -> oauth2.authenticationManagerResolver(this.tokenAuthenticationManagerResolver()));
-      }
-    http.oauth2ResourceServer(
-        oauth2 -> oauth2.authenticationManagerResolver(this.tokenAuthenticationManagerResolver()));
+    if (provider.equals("pcglauthz")) {
+      http.addFilterBefore(authZAuthenticationFilter, BasicAuthenticationFilter.class);
+    } else {
+      // Score built in auth handling for non-authz providers.
+      // This is kept to keep support for upstream code, but will be unused in PCGL.
+      // If this is left in the security chain, then any request without the
+      // Authorization token
+      // will throw an error,
+      // and that conflicts with our handling of requests identified by service
+      // tokens.
+      http.oauth2ResourceServer(
+          oauth2 ->
+              oauth2.authenticationManagerResolver(this.tokenAuthenticationManagerResolver()));
+    }
   }
 
   @Getter

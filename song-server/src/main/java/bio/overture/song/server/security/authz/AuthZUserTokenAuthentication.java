@@ -1,10 +1,9 @@
 package bio.overture.song.server.security.authz;
 
+import java.util.Collection;
 import lombok.Getter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
-
-import java.util.Collection;
 
 public class AuthZUserTokenAuthentication extends AbstractAuthenticationToken {
 
@@ -21,17 +20,13 @@ public class AuthZUserTokenAuthentication extends AbstractAuthenticationToken {
     this.userClaims = userClaims;
   }
 
-  /**
-   * @return serviceToken - Secret token used to authenticate the requesting service.
-   */
+  /** @return serviceToken - Secret token used to authenticate the requesting service. */
   @Override
   public Object getCredentials() {
     return this.bearerToken;
   }
 
-  /**
-   * @return serviceID - ID of the authenticated service.
-   */
+  /** @return serviceID - ID of the authenticated service. */
   @Override
   public Object getPrincipal() {
     return this.userClaims;

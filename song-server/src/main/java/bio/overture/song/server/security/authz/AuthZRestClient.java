@@ -5,6 +5,7 @@ import bio.overture.song.server.security.authz.dto.AuthZCreateServiceTokenReques
 import bio.overture.song.server.security.authz.dto.AuthZCreateServiceTokenResponse;
 import bio.overture.song.server.security.authz.dto.AuthZServiceTokenVerificationResponse;
 import bio.overture.song.server.security.authz.dto.AuthZUserDetailsResponse;
+import java.util.Optional;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -14,8 +15,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import java.util.Optional;
 
 @Component
 @Profile("pcglauthz")

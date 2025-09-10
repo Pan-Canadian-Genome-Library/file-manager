@@ -11,8 +11,8 @@ import org.springframework.context.annotation.Profile;
 @ConfigurationProperties("auth.server.authz")
 public class PCGLAuthZConfig {
 
-    private String host;
-    private String adminGroup;
-    private String serviceId;
-    private String serviceUUID;
+  private String host;
+  private String adminGroup;
+  private String serviceId;
+  private String serviceUUID;
 }

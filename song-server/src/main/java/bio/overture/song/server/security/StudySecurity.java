@@ -41,27 +41,27 @@ public class StudySecurity {
 
   @Autowired private KeycloakAuthorizationService keycloakAuthorizationService;
 
-    @Autowired private AuthZAuthorizationService authZAuthorizationService;
+  @Autowired private AuthZAuthorizationService authZAuthorizationService;
 
   public boolean authorize(@NonNull Authentication authentication, @NonNull final String studyId) {
     log.info("Checking study-level authorization for studyId {}", studyId);
 
     if ("pcglauthz".equalsIgnoreCase(provider)) {
 
-        if (authentication instanceof AuthZServiceTokenAuthentication) {
-            // Verified service token. Services have permission to read and write study data.
-            return true;
-        }
-        if (authentication instanceof AuthZUserTokenAuthentication) {
+      if (authentication instanceof AuthZServiceTokenAuthentication) {
+        // Verified service token. Services have permission to read and write study data.
+        return true;
+      }
+      if (authentication instanceof AuthZUserTokenAuthentication) {
 
-            val claims = ((AuthZUserTokenAuthentication) authentication).getUserClaims();
+        val claims = ((AuthZUserTokenAuthentication) authentication).getUserClaims();
 
-            return authZAuthorizationService.canEditStudy(claims, studyId);
-        }
+        return authZAuthorizationService.canEditStudy(claims, studyId);
+      }
 
-        // Fallthrough case for if something unexpected happened and the Authentication object does
-        // not match any of the expected types. Deny access to protected resource.
-        return false;
+      // Fallthrough case for if something unexpected happened and the Authentication object does
+      // not match any of the expected types. Deny access to protected resource.
+      return false;
     }
 
     Set<String> grantedScopes;

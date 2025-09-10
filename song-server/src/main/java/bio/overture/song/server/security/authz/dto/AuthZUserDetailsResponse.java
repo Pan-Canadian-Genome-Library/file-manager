@@ -1,13 +1,12 @@
 package bio.overture.song.server.security.authz.dto;
 
 import bio.overture.song.server.security.authz.AuthZUserClaims;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
@@ -59,9 +58,7 @@ public class AuthZUserDetailsResponse {
 
   public AuthZUserClaims toClaims() {
     List<String> groupNames =
-        this.getGroups().stream()
-            .map(Group::getName)
-            .collect(Collectors.toList());
+        this.getGroups().stream().map(Group::getName).collect(Collectors.toList());
 
     return AuthZUserClaims.builder()
         .sub(this.getUserinfo().getPcgl_id())

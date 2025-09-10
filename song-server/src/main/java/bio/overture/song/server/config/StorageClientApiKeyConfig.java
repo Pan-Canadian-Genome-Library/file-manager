@@ -34,7 +34,7 @@ import org.springframework.web.client.RestTemplate;
 
 @NoArgsConstructor
 @Configuration
-@Profile("!score-client-cred")
+@Profile({"!score-client-cred & !pcglauthz"})
 public class StorageClientApiKeyConfig {
 
   @Autowired private RetryTemplate retryTemplate;

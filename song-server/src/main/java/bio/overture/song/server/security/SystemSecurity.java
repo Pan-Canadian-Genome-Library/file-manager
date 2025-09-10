@@ -42,27 +42,28 @@ public class SystemSecurity {
   private String adminGroupName;
 
   @Autowired private KeycloakAuthorizationService keycloakAuthorizationService;
-    @Autowired private AuthZAuthorizationService authZAuthorizationService;
+  @Autowired private AuthZAuthorizationService authZAuthorizationService;
 
   public boolean authorize(@NonNull Authentication authentication) {
     log.debug("Checking system-level authorization");
 
-        if ("pcglauthz".equalsIgnoreCase(provider)) {
+    if ("pcglauthz".equalsIgnoreCase(provider)) {
 
-            if (authentication instanceof AuthZServiceTokenAuthentication) {
-                // Verified service token. Services do not have system level access to modify schemas or studies.
-                return false;
-            }
-            if (authentication instanceof AuthZUserTokenAuthentication) {
+      if (authentication instanceof AuthZServiceTokenAuthentication) {
+        // Verified service token. Services do not have system level access to modify schemas or
+        // studies.
+        return false;
+      }
+      if (authentication instanceof AuthZUserTokenAuthentication) {
 
-                val claims = ((AuthZUserTokenAuthentication) authentication).getUserClaims();
+        val claims = ((AuthZUserTokenAuthentication) authentication).getUserClaims();
 
-                return authZAuthorizationService.isAdmin(claims);
-            }
+        return authZAuthorizationService.isAdmin(claims);
+      }
 
-            // Fallthrough case for if something unexpected happened and the Authentication object does
-            // not match any of the expected types. Deny access to protected resource.
-            return false;
+      // Fallthrough case for if something unexpected happened and the Authentication object does
+      // not match any of the expected types. Deny access to protected resource.
+      return false;
     }
 
     Set<String> grantedScopes;

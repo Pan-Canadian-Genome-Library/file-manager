@@ -1,9 +1,8 @@
 package bio.overture.song.server.security.authz;
 
+import java.util.Collection;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
-
-import java.util.Collection;
 
 public class AuthZServiceTokenAuthentication extends AbstractAuthenticationToken {
 
@@ -18,17 +17,13 @@ public class AuthZServiceTokenAuthentication extends AbstractAuthenticationToken
     this.credentials = authZServiceTokenCredentials;
   }
 
-  /**
-   * @return serviceToken - Secret token used to authenticate the requesting service.
-   */
+  /** @return serviceToken - Secret token used to authenticate the requesting service. */
   @Override
   public Object getCredentials() {
     return credentials.getServiceToken();
   }
 
-  /**
-   * @return serviceID - ID of the authenticated service.
-   */
+  /** @return serviceID - ID of the authenticated service. */
   @Override
   public Object getPrincipal() {
     return credentials.getServiceId();
