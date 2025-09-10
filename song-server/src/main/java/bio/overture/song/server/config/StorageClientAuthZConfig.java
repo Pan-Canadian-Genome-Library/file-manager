@@ -60,7 +60,8 @@ public class StorageClientAuthZConfig {
           // Clear the token so a new one will be fetched to build the retry request
           authZRestClient.clearServiceVerificationToken();
         } else {
-          // Other ClientErrorExceptions indicate our request is malformed and should not be retried
+          // Other ClientErrorExceptions indicate our request is malformed and should not
+          // be retried
           context.setExhaustedOnly();
         }
       }
@@ -82,7 +83,8 @@ public class StorageClientAuthZConfig {
 
     val retryTemplate = new RetryTemplate();
 
-    // Retry all the default retryable exceptions, plus also HttpClientErrorExceptions which include
+    // Retry all the default retryable exceptions, plus also
+    // HttpClientErrorExceptions which include
     // UNAUTHORIZED
     Map<Class<? extends Throwable>, Boolean> retryableExceptions =
         ImmutableMap.<Class<? extends Throwable>, Boolean>builder()
@@ -91,11 +93,14 @@ public class StorageClientAuthZConfig {
             .build();
     retryTemplate.setRetryPolicy(new SimpleRetryPolicy(maxRetries, retryableExceptions, true));
 
-    // Default retry listener will not perform any action on Client Errors (such as Unauthorized)
-    // but will prevent retries when the request fails due to timeout or service unavailable
+    // Default retry listener will not perform any action on Client Errors (such as
+    // Unauthorized)
+    // but will prevent retries when the request fails due to timeout or service
+    // unavailable
     retryTemplate.registerListener(new DefaultRetryListener(false));
 
-    // This custom listener resets the service verification token if the request is rejected as
+    // This custom listener resets the service verification token if the request is
+    // rejected as
     // UNAUTHORIZED
     retryTemplate.registerListener(new ResetUnauthorizedTokenRetryListener());
 
@@ -111,7 +116,7 @@ public class StorageClientAuthZConfig {
           request
               .getHeaders()
               .add("X-Service-Token", authZRestClient.getServiceVerificationToken());
-          //              .add("X-Service-Token", authZRestClient.getServiceVerificationToken());
+
           request.getHeaders().add("X-Service-Id", pcglAuthZConfig.getServiceId());
           return clientHttpRequestExecution.execute(request, body);
         };
