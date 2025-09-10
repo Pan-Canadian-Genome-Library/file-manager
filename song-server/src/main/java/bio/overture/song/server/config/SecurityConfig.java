@@ -122,8 +122,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .antMatchers(HttpMethod.GET, "/schemas/**") // AKA. AnalysisType
         .permitAll()
         .antMatchers(
-            HttpMethod.GET, "/studies/**") // This covers StudyController, FileController, and
-        // AnalysisController
+            HttpMethod.GET, "/studies/{studyId}", "/studies/all", "/studies/{studyId}/files/{id}")
         .permitAll()
         .antMatchers(
             swaggerConfig.getAlternateSwaggerUrl(),

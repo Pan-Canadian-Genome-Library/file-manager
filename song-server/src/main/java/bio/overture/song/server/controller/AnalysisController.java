@@ -59,6 +59,7 @@ public class AnalysisController {
   @ApiOperation(
       value = "GetAnalysesForStudy",
       notes = "Retrieve all analysis objects for a studyId")
+  @PreAuthorize("@studySecurity.authorize(authentication, #studyId)")
   @GetMapping(value = "")
   public List<Analysis> getAnalysis(
       @PathVariable("studyId") String studyId,
@@ -74,6 +75,7 @@ public class AnalysisController {
           "Retrieve paginated analysis objects for a studyId. analysisState is optional, default to PUBLISHED, "
               + "offset is required, default to 0, "
               + "limit is required, default to 100. Results are sorted by analysis id in ASC order.")
+  @PreAuthorize("@studySecurity.authorize(authentication, #studyId)")
   @GetMapping(value = "/paginated")
   public GetAnalysisResponse getAnalysis(
       @PathVariable("studyId") String studyId,
@@ -164,6 +166,7 @@ public class AnalysisController {
    * @return A JSON object representing this analysis
    */
   @ApiOperation(value = "ReadAnalysis", notes = "Retrieve the analysis object for an analysisId")
+  @PreAuthorize("@studySecurity.authorize(authentication, #studyId)")
   @GetMapping(value = "/{id}")
   public Analysis read(@PathVariable("studyId") String studyId, @PathVariable("id") String id) {
     return analysisService.securedDeepRead(studyId, id);
@@ -176,6 +179,7 @@ public class AnalysisController {
    * @return A list of all the files in this analysis analysisId's fileset.
    */
   @ApiOperation(value = "ReadAnalysisFiles", notes = "Retrieve the file objects for an analysisId")
+  @PreAuthorize("@studySecurity.authorize(authentication, #studyId)")
   @GetMapping(value = "/{id}/files")
   public List<FileEntity> getFilesById(
       @PathVariable("studyId") String studyId, @PathVariable("id") String id) {
@@ -186,6 +190,7 @@ public class AnalysisController {
       value = "IdSearch",
       notes =
           "Search for analysis objects by specifying regex patterns for the fileIds request parameters")
+  @PreAuthorize("@studySecurity.authorize(authentication, #studyId)")
   @GetMapping(value = "/search/id")
   public List<Analysis> idSearch(
       @PathVariable("studyId") String studyId,
