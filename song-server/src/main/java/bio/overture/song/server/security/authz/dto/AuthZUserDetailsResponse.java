@@ -1,15 +1,18 @@
-package bio.overture.song.server.auth;
+package bio.overture.song.server.security.authz.dto;
 
-import java.util.ArrayList;
-import java.util.List;
+import bio.overture.song.server.security.authz.AuthZUserClaims;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class AuthZUserResponse {
+public class AuthZUserDetailsResponse {
 
   @Data
   @AllArgsConstructor
@@ -53,4 +56,18 @@ public class AuthZUserResponse {
   private UserInfo userinfo;
   private StudyAuthorizations study_authorizations;
   private List<Group> groups;
+
+  public AuthZUserClaims toClaims() {
+    List<String> groupNames =
+        this.getGroups().stream()
+            .map(Group::getName)
+            .collect(Collectors.toList());
+
+    return AuthZUserClaims.builder()
+        .sub(this.getUserinfo().getPcgl_id())
+        .editableStudies(this.getStudy_authorizations().getEditable_studies())
+        .readableStudies(this.getStudy_authorizations().getReadable_studies())
+        .groups(groupNames)
+        .build();
+  }
 }

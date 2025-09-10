@@ -19,8 +19,9 @@ package bio.overture.song.server.security;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopes;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopesFromRpt;
 
-import bio.overture.song.server.auth.AuthZAuthorizationService;
-import bio.overture.song.server.auth.AuthzTokenIntrospector;
+import bio.overture.song.server.security.authz.AuthZAuthorizationService;
+import bio.overture.song.server.security.authz.AuthZServiceTokenAuthentication;
+import bio.overture.song.server.security.authz.AuthZUserTokenAuthentication;
 import bio.overture.song.server.service.auth.KeycloakAuthorizationService;
 import java.util.Set;
 import lombok.*;
@@ -40,15 +41,27 @@ public class StudySecurity {
 
   @Autowired private KeycloakAuthorizationService keycloakAuthorizationService;
 
-  @Autowired private AuthZAuthorizationService authorizationService;
+    @Autowired private AuthZAuthorizationService authZAuthorizationService;
 
   public boolean authorize(@NonNull Authentication authentication, @NonNull final String studyId) {
     log.info("Checking study-level authorization for studyId {}", studyId);
 
     if ("pcglauthz".equalsIgnoreCase(provider)) {
-      val claims = AuthzTokenIntrospector.extractClaimsFromAuthentication(authentication);
 
-      return claims.isPresent() && authorizationService.canEditStudy(claims.get(), studyId);
+        if (authentication instanceof AuthZServiceTokenAuthentication) {
+            // Verified service token. Services have permission to read and write study data.
+            return true;
+        }
+        if (authentication instanceof AuthZUserTokenAuthentication) {
+
+            val claims = ((AuthZUserTokenAuthentication) authentication).getUserClaims();
+
+            return authZAuthorizationService.canEditStudy(claims, studyId);
+        }
+
+        // Fallthrough case for if something unexpected happened and the Authentication object does
+        // not match any of the expected types. Deny access to protected resource.
+        return false;
     }
 
     Set<String> grantedScopes;

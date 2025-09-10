@@ -19,8 +19,9 @@ package bio.overture.song.server.security;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopes;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopesFromRpt;
 
-import bio.overture.song.server.auth.AuthZAuthorizationService;
-import bio.overture.song.server.auth.AuthzTokenIntrospector;
+import bio.overture.song.server.security.authz.AuthZAuthorizationService;
+import bio.overture.song.server.security.authz.AuthZServiceTokenAuthentication;
+import bio.overture.song.server.security.authz.AuthZUserTokenAuthentication;
 import bio.overture.song.server.service.auth.KeycloakAuthorizationService;
 import java.util.Set;
 import lombok.*;
@@ -41,15 +42,27 @@ public class SystemSecurity {
   private String adminGroupName;
 
   @Autowired private KeycloakAuthorizationService keycloakAuthorizationService;
-  @Autowired private AuthZAuthorizationService authZAuthorizationService;
+    @Autowired private AuthZAuthorizationService authZAuthorizationService;
 
   public boolean authorize(@NonNull Authentication authentication) {
     log.debug("Checking system-level authorization");
 
-    if ("pcglauthz".equalsIgnoreCase(provider)) {
-      val claims = AuthzTokenIntrospector.extractClaimsFromAuthentication(authentication);
+        if ("pcglauthz".equalsIgnoreCase(provider)) {
 
-      return claims.isPresent() && authZAuthorizationService.isAdmin(claims.get());
+            if (authentication instanceof AuthZServiceTokenAuthentication) {
+                // Verified service token. Services do not have system level access to modify schemas or studies.
+                return false;
+            }
+            if (authentication instanceof AuthZUserTokenAuthentication) {
+
+                val claims = ((AuthZUserTokenAuthentication) authentication).getUserClaims();
+
+                return authZAuthorizationService.isAdmin(claims);
+            }
+
+            // Fallthrough case for if something unexpected happened and the Authentication object does
+            // not match any of the expected types. Deny access to protected resource.
+            return false;
     }
 
     Set<String> grantedScopes;
