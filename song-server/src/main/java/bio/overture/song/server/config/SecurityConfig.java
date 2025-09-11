@@ -16,11 +16,10 @@
  */
 package bio.overture.song.server.config;
 
-import bio.overture.song.server.auth.AuthzTokenIntrospector;
-import bio.overture.song.server.config.SecurityConfig.ScopeConfig.StudyScopeConfig;
 import bio.overture.song.server.security.ApiKeyIntrospector;
 import bio.overture.song.server.security.StudySecurity;
 import bio.overture.song.server.security.SystemSecurity;
+import bio.overture.song.server.security.authz.AuthZAuthenticationFilter;
 import java.util.UUID;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotNull;
@@ -42,10 +41,12 @@ import org.springframework.security.authentication.AuthenticationManagerResolver
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationProvider;
 import org.springframework.security.oauth2.server.resource.authentication.OpaqueTokenAuthenticationProvider;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -58,7 +59,9 @@ import org.springframework.validation.annotation.Validated;
 @EnableWebSecurity
 @ConfigurationProperties("auth.server")
 @Configuration
-public class SecurityConfig {
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+  @Autowired private AuthZAuthenticationFilter authZAuthenticationFilter;
 
   @Autowired private SwaggerConfig swaggerConfig;
   @Autowired private JwtDecoder jwtDecoder;
@@ -70,11 +73,6 @@ public class SecurityConfig {
   private String tokenName;
 
   private final ScopeConfig scope = new ScopeConfig();
-  private final AuthzTokenIntrospector authzTokenIntrospector;
-
-  public SecurityConfig(AuthzTokenIntrospector authzTokenIntrospector) {
-    this.authzTokenIntrospector = authzTokenIntrospector;
-  }
 
   @Bean
   public SystemSecurity systemSecurity() {
@@ -83,11 +81,6 @@ public class SecurityConfig {
 
   @Bean
   public AuthenticationManagerResolver<HttpServletRequest> tokenAuthenticationManagerResolver() {
-    if ("pcglauthz".equalsIgnoreCase(provider)) {
-      AuthenticationManager tokenManager =
-          new ProviderManager(new OpaqueTokenAuthenticationProvider(new AuthzTokenIntrospector()));
-      return (request) -> tokenManager;
-    }
 
     // Auth Managers for JWT and for ApiKeys. JWT uses the default auth provider,
     // but OpaqueTokens are handled by the custom ApiKeyIntrospector
@@ -118,6 +111,7 @@ public class SecurityConfig {
   @Override
   @SneakyThrows
   public void configure(HttpSecurity http) {
+    http.csrf().disable();
     http.authorizeRequests()
         .antMatchers("/isAlive")
         .permitAll()
@@ -128,10 +122,8 @@ public class SecurityConfig {
         .antMatchers(HttpMethod.GET, "/schemas/**") // AKA. AnalysisType
         .permitAll()
         .antMatchers(
-            HttpMethod.GET,
-            "/studies/**") // This covers StudyController, FileController, and AnalysisController
-        .permitAll()
-        .antMatchers("/upload/**")
+            HttpMethod.GET, "/studies/**") // This covers StudyController, FileController, and
+        // AnalysisController
         .permitAll()
         .antMatchers(
             swaggerConfig.getAlternateSwaggerUrl(),
@@ -145,8 +137,17 @@ public class SecurityConfig {
         .anyRequest()
         .authenticated();
 
-    http.oauth2ResourceServer(
-        oauth2 -> oauth2.authenticationManagerResolver(this.tokenAuthenticationManagerResolver()));
+    if (provider.equals("pcglauthz")) {
+      http.addFilterBefore(authZAuthenticationFilter, BasicAuthenticationFilter.class);
+    } else {
+      // Score built in auth handling for non-authz providers.
+      // This is kept to keep support for upstream code, but will be unused in PCGL. If this is left
+      // in the security chain, then any request without the Authorization token will throw an
+      // error, and that conflicts with our handling of requests identified by service tokens.
+      http.oauth2ResourceServer(
+          oauth2 ->
+              oauth2.authenticationManagerResolver(this.tokenAuthenticationManagerResolver()));
+    }
   }
 
   @Getter

@@ -1,16 +1,14 @@
-package bio.overture.song.server.auth;
+package bio.overture.song.server.security.authz;
 
 import java.util.List;
-import java.util.Map;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 
-@Getter
+@Data
 @Builder
-public class AuthZClaims {
+public class AuthZUserClaims {
+
   private final String sub;
-  private final List<Map<String, Object>> emails;
-  private final String primaryEmail;
   private final List<String> editableStudies;
   private final List<String> readableStudies;
   private final List<String> groups;

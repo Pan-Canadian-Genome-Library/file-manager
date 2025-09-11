@@ -19,14 +19,15 @@ package bio.overture.song.server.security;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopes;
 import static bio.overture.song.server.utils.Scopes.extractGrantedScopesFromRpt;
 
-import bio.overture.song.server.auth.AuthZAuthorizationService;
+import bio.overture.song.server.security.authz.AuthZAuthorizationService;
+import bio.overture.song.server.security.authz.AuthZServiceTokenAuthentication;
+import bio.overture.song.server.security.authz.AuthZUserTokenAuthentication;
 import bio.overture.song.server.service.auth.KeycloakAuthorizationService;
 import java.util.Set;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 @Slf4j
@@ -45,22 +46,39 @@ public class StudySecurity {
   public boolean authorize(@NonNull Authentication authentication, @NonNull final String studyId) {
     log.info("Checking study-level authorization for studyId {}", studyId);
 
-    if ("pcglauthz".equalsIgnoreCase(provider)
-        && authentication instanceof BearerTokenAuthentication) {
-      return authZAuthorizationService.canEditStudy(authentication, studyId);
-    } else if ("keycloak".equalsIgnoreCase(provider)
-        && authentication instanceof JwtAuthenticationToken) {
+    if ("pcglauthz".equalsIgnoreCase(provider)) {
+
+      if (authentication instanceof AuthZServiceTokenAuthentication) {
+        // Verified service token. Services have permission to read and write study data.
+        return true;
+      }
+      if (authentication instanceof AuthZUserTokenAuthentication) {
+
+        val claims = ((AuthZUserTokenAuthentication) authentication).getUserClaims();
+
+        return authZAuthorizationService.canEditStudy(claims, studyId);
+      }
+
+      // Fallthrough case for if something unexpected happened and the Authentication object does
+      // not match any of the expected types. Deny access to protected resource.
+      return false;
+    }
+
+    Set<String> grantedScopes;
+
+    if ("keycloak".equalsIgnoreCase(provider) && authentication instanceof JwtAuthenticationToken) {
 
       val authGrants =
           keycloakAuthorizationService.fetchAuthorizationGrants(
               ((JwtAuthenticationToken) authentication).getToken().getTokenValue());
 
-      return verifyOneOfStudyScope(extractGrantedScopesFromRpt(authGrants), studyId);
+      grantedScopes = extractGrantedScopesFromRpt(authGrants);
     } else {
-      // Default to EGO provider
       // extract scopes from authentication object
-      return verifyOneOfStudyScope(extractGrantedScopes(authentication), studyId);
+      grantedScopes = extractGrantedScopes(authentication);
     }
+
+    return verifyOneOfStudyScope(grantedScopes, studyId);
   }
 
   public boolean isGrantedForStudy(@NonNull String tokenScope, @NonNull String studyId) {
