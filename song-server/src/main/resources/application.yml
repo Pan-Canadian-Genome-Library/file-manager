@@ -114,6 +114,7 @@ spring:
 logging:
   level:
     root: INFO
+    bio.overture.song: INFO
     io.swagger.models.parameters.AbstractSerializableParameter: ERROR
 
 ---

@@ -43,7 +43,9 @@ public class AuthZAuthenticationFilter extends OncePerRequestFilter {
 
         val authentication = serviceTokenAuthentication.get();
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        logger.debug("Service token authentication successful - Valid Service Token and Service ID");
       } else {
+        logger.debug("Service token authentication failed - Invalid Service Token or Service ID");
         resolveUnauthorized(response);
         return;
       }
@@ -54,6 +56,7 @@ public class AuthZAuthenticationFilter extends OncePerRequestFilter {
       // request.
 
       if (!authorizationHeader.startsWith("Bearer ")) {
+        logger.debug("User token authentication failed - No Bearer token");
         resolveUnauthorized(response);
         return;
       }
@@ -61,8 +64,10 @@ public class AuthZAuthenticationFilter extends OncePerRequestFilter {
       String bearerToken = authorizationHeader.substring(7);
       val userTokenAuthentication = getUserTokenAuthentication(bearerToken);
       if (userTokenAuthentication.isPresent()) {
+        logger.debug("User token authentication successful - Valid User Token");
         SecurityContextHolder.getContext().setAuthentication(userTokenAuthentication.get());
       } else {
+        logger.debug("User token authentication failed - Invalid User Token");
         resolveUnauthorized(response);
         return;
       }
@@ -75,7 +80,7 @@ public class AuthZAuthenticationFilter extends OncePerRequestFilter {
   }
 
   private void resolveUnauthorized(@NonNull HttpServletResponse response) throws IOException {
-    response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
   }
 
   private Optional<AuthZUserTokenAuthentication> getUserTokenAuthentication(
@@ -113,5 +118,15 @@ public class AuthZAuthenticationFilter extends OncePerRequestFilter {
       logger.error("Provided service token failed verification request.", e);
       return Optional.empty();
     }
+  }
+
+  @Override
+  /**
+   * Overriding this method to return 'false' to allow this auth filter to handle authentication
+   * errors properly and return a 401 Unauthorized response instead of being bypassed to other
+   * filters which could result in a 403 Forbidden response.
+   */
+  protected boolean shouldNotFilterErrorDispatch() {
+    return false;
   }
 }

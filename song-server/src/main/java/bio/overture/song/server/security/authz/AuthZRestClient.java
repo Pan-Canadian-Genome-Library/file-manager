@@ -6,6 +6,8 @@ import bio.overture.song.server.security.authz.dto.AuthZCreateServiceTokenRespon
 import bio.overture.song.server.security.authz.dto.AuthZServiceTokenVerificationResponse;
 import bio.overture.song.server.security.authz.dto.AuthZUserDetailsResponse;
 import java.util.Optional;
+
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -15,6 +17,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+@Slf4j
 @Component
 public class AuthZRestClient {
   @Autowired private PCGLAuthZConfig pcglAuthZConfig;
@@ -42,6 +45,8 @@ public class AuthZRestClient {
         restTemplate.exchange(url, HttpMethod.POST, request, AuthZCreateServiceTokenResponse.class);
 
     val body = response.getBody();
+
+    log.debug("Create Service Token. Response code: {} - body: {}", response.getStatusCode(), body);
 
     if (body == null) {
       throw new RestClientException("Failed to retrieve Service Verification Token.");
@@ -77,6 +82,9 @@ public class AuthZRestClient {
         restTemplate.exchange(url, HttpMethod.GET, request, AuthZUserDetailsResponse.class);
 
     AuthZUserDetailsResponse userDetails = response.getBody();
+
+    log.debug("Verify User Token. Response code: {} - body: {}", response.getStatusCode(), userDetails);
+
     if (userDetails == null) {
       return null;
     }
@@ -137,6 +145,8 @@ public class AuthZRestClient {
             url, HttpMethod.GET, request, AuthZServiceTokenVerificationResponse.class);
 
     val body = response.getBody();
+
+    log.debug("Verify Service Token. Response code: {} - body: {}", response.getStatusCode(), body);
 
     return body != null && body.isResult();
   }
