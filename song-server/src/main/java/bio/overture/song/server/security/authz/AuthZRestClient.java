@@ -46,7 +46,7 @@ public class AuthZRestClient {
 
     val body = response.getBody();
 
-    log.info("Create Service Token. Response code: {} - body: {}", response.getStatusCode(), body);
+    log.debug("Create Service Token. Response code: {} - body: {}", response.getStatusCode(), body);
 
     if (body == null) {
       throw new RestClientException("Failed to retrieve Service Verification Token.");
@@ -83,7 +83,7 @@ public class AuthZRestClient {
 
     AuthZUserDetailsResponse userDetails = response.getBody();
 
-    log.info("Verify User Token. Response code: {} - body: {}", response.getStatusCode(), userDetails);
+    log.debug("Verify User Token. Response code: {} - body: {}", response.getStatusCode(), userDetails);
 
     if (userDetails == null) {
       return null;
@@ -146,7 +146,7 @@ public class AuthZRestClient {
 
     val body = response.getBody();
 
-    log.info("Verify Service Token. Response code: {} - body: {}", response.getStatusCode(), body);
+    log.debug("Verify Service Token. Response code: {} - body: {}", response.getStatusCode(), body);
 
     return body != null && body.isResult();
   }

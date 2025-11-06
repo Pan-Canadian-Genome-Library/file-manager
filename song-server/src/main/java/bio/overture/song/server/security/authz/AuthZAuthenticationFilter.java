@@ -43,9 +43,9 @@ public class AuthZAuthenticationFilter extends OncePerRequestFilter {
 
         val authentication = serviceTokenAuthentication.get();
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        logger.info("Service token authentication successful - Valid Service Token and Service ID");
+        logger.debug("Service token authentication successful - Valid Service Token and Service ID");
       } else {
-        logger.info("Service token authentication failed - Invalid Service Token or Service ID");
+        logger.debug("Service token authentication failed - Invalid Service Token or Service ID");
         resolveUnauthorized(response);
         return;
       }
@@ -56,7 +56,7 @@ public class AuthZAuthenticationFilter extends OncePerRequestFilter {
       // request.
 
       if (!authorizationHeader.startsWith("Bearer ")) {
-        logger.info("User token authentication failed - No Bearer token");
+        logger.debug("User token authentication failed - No Bearer token");
         resolveUnauthorized(response);
         return;
       }
@@ -64,10 +64,10 @@ public class AuthZAuthenticationFilter extends OncePerRequestFilter {
       String bearerToken = authorizationHeader.substring(7);
       val userTokenAuthentication = getUserTokenAuthentication(bearerToken);
       if (userTokenAuthentication.isPresent()) {
-        logger.info("User token authentication successful - Valid User Token");
+        logger.debug("User token authentication successful - Valid User Token");
         SecurityContextHolder.getContext().setAuthentication(userTokenAuthentication.get());
       } else {
-        logger.info("User token authentication failed - Invalid User Token");
+        logger.debug("User token authentication failed - Invalid User Token");
         resolveUnauthorized(response);
         return;
       }
