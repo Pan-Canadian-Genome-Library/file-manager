@@ -27,7 +27,6 @@ import java.util.Set;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
@@ -37,9 +36,6 @@ public class SystemSecurity {
 
   @NonNull private final String systemScope;
   private final String provider;
-
-  @Value("${authz.admin.group:}")
-  private String adminGroupName;
 
   @Autowired private KeycloakAuthorizationService keycloakAuthorizationService;
   @Autowired private AuthZAuthorizationService authZAuthorizationService;
