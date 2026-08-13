@@ -6,10 +6,10 @@ import bio.overture.song.server.security.authz.dto.AuthZCreateServiceTokenRespon
 import bio.overture.song.server.security.authz.dto.AuthZServiceTokenVerificationResponse;
 import bio.overture.song.server.security.authz.dto.AuthZUserDetailsResponse;
 import java.util.Optional;
-
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -19,6 +19,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
 @Component
+@Profile("pcglauthz")
 public class AuthZRestClient {
   @Autowired private PCGLAuthZConfig pcglAuthZConfig;
 
@@ -83,7 +84,8 @@ public class AuthZRestClient {
 
     AuthZUserDetailsResponse userDetails = response.getBody();
 
-    log.debug("Verify User Token. Response code: {} - body: {}", response.getStatusCode(), userDetails);
+    log.debug(
+        "Verify User Token. Response code: {} - body: {}", response.getStatusCode(), userDetails);
 
     if (userDetails == null) {
       return null;

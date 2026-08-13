@@ -11,12 +11,14 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Slf4j
 @Component
+@Profile("pcglauthz")
 public class AuthZAuthenticationFilter extends OncePerRequestFilter {
 
   @Autowired private AuthZRestClient authZRestClient;
@@ -43,7 +45,8 @@ public class AuthZAuthenticationFilter extends OncePerRequestFilter {
 
         val authentication = serviceTokenAuthentication.get();
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        logger.debug("Service token authentication successful - Valid Service Token and Service ID");
+        logger.debug(
+            "Service token authentication successful - Valid Service Token and Service ID");
       } else {
         logger.debug("Service token authentication failed - Invalid Service Token or Service ID");
         resolveUnauthorized(response);
