@@ -1,4 +1,6 @@
-# Song
+# PCGL File Manager
+
+The PCGL File Manager is a fork of [Overture Song](https://github.com/overture-stack/song) with extensions to accomodate the unique authorization system and data model used in the Pan-Canadian Genome Library.
 
 Song functions as a file catalog system, tracking files and managing their metadata. To manage file transfers to and from object storage Song interacts with its required companion application, Score.
 
@@ -9,6 +11,34 @@ Song functions as a file catalog system, tracking files and managing their metad
 > </div>
 >
 > _Song is part of [Overture](https://www.overture.bio/), a collection of open-source software microservices used to create platforms for researchers to organize and share genomics data._
+
+## PCGL Code Extensions
+
+### AuthZ Integration
+The Keycloak-based OAuth2 security is replaces with a PCGL AuthZ service. This is activated via the `pcglauthz` Spring profile.
+
+**Key added files** (all in `song-server/src/main/java/bio/overture/song/server/security/authz/`):
+
+- `AuthZAuthenticationFilter`: Servlet filter that intercepts requests and authenticates via either a user Bearer token or service-to-service token (`X-Service-Token` / `X-Service-Id` headers)
+- `AuthZRestClient`: HTTP client that calls the external PCGL AuthZ service to validate tokens and retrieve user claims
+- `AuthZAuthorizationService`: Determines permissions from `AuthZUserClaims` (admin check, study read/edit access)
+- `AuthZUserClaims`: User identity model with `editable_studies`, `readable_studies`, and `data_admin` flag
+- `PCGLAuthZConfig`: Config class bound to `auth.server.authz.*` properties (host, serviceId, serviceUUID)
+
+**Authorization model**: Instead of Keycloak OAuth2 scopes, PCGL uses study-level lists (`editable_studies`, `readable_studies`) fetched from the AuthZ service. A `data_admin` flag grants full access.
+
+**Service-to-service auth**: Services authenticate using `X-Service-Token` and `X-Service-Id` headers (rather than Bearer tokens), verified against the AuthZ service.
+
+**Configuration** (in `application.yml`, `pcglauthz` profile):
+```yaml
+auth:
+  server:
+    provider: pcglauthz
+    authz:
+      host: https://authz.example.com
+      service-id: SERVICE-LABEL
+      service-uuid: 00000000-0000-0000-0000-000000000000
+```
 
 ## Documentation
 
