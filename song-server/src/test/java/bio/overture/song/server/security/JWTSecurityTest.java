@@ -58,6 +58,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,6 +80,7 @@ import org.springframework.web.context.WebApplicationContext;
  * Spring Security loads all the correct modules
  */
 @Slf4j
+@Disabled("Tests JWT/Ego/Keycloak auth which is replaced by PCGL AuthZ in this fork")
 @SpringBootTest
 @ContextConfiguration
 @ExtendWith(SpringExtension.class)
