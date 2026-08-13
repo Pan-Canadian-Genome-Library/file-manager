@@ -26,14 +26,21 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 @Slf4j
 @ExtendWith(SpringExtension.class)
 @AutoConfigureMockMvc
-@ActiveProfiles({"test", "secure"})
+@ActiveProfiles({"test", "secure", "pcglauthz"})
 @SpringBootTest
+@TestPropertySource(
+    properties = {
+      "auth.server.authz.host=http://localhost",
+      "auth.server.authz.service-id=test-service",
+      "auth.server.authz.service-uuid=00000000-0000-0000-0000-000000000000"
+    })
 public class LegacyEntityControllerTest {
   @Autowired private MockMvc mvc;
 
